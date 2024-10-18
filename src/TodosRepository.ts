@@ -18,4 +18,10 @@ export class TodosRepository {
 
     return new TodoModel(data.id, data.description, data.done);
   }
+
+  findAll() {
+    return SQL`SELECT id, description, done FROM todos`
+      .all<Todo>(this.db)
+      .map(({ id, description, done }) => new TodoModel(id, description, done));
+  }
 }
