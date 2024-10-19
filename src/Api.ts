@@ -1,19 +1,17 @@
 import { createServer } from 'node:http';
 import type { Server, IncomingMessage, ServerResponse } from 'node:http';
-import type { Path } from 'path-parser';
-import { HttpError, NotFound } from './HttpError.js';
+import { Path } from 'path-parser';
+import { BadRequest, HttpError, NotFound } from './HttpError.js';
 
 type AsyncRequestHandler = (
   req: IncomingMessage,
   res: ServerResponse,
 ) => Promise<void> | void;
 
-type HttpMethod = 'GET';
-
 export class Api {
   private server: Server;
   private routes: Array<{
-    method: HttpMethod;
+    method: string;
     path: Path;
     cb: AsyncRequestHandler;
   }> = [];
@@ -22,12 +20,19 @@ export class Api {
     this.server = createServer(this.handleRequest.bind(this));
   }
 
+  private findRoute(method: string, path: string) {
+    return this.routes.find(
+      (route) =>
+        method.toLowerCase() === route.method.toLowerCase() &&
+        route.path.test(path),
+    );
+  }
+
   private async handleRequest(req: IncomingMessage, res: ServerResponse) {
     try {
-      const route = this.routes.find(
-        ({ path, method }) =>
-          req.url && method === req.method && path.test(req.url),
-      );
+      if (!req.method || !req.url) throw new BadRequest();
+
+      const route = this.findRoute(req.method, req.url);
 
       if (!route) throw new NotFound();
 
@@ -46,15 +51,21 @@ export class Api {
     }
   }
 
-  public async listen() {
-    this.server.listen(1337);
+  public async listen(port?: number, host?: string) {
+    this.server.listen(port, host, () => {
+      console.log('Listening...');
+    });
   }
 
-  public async pushRoute(
-    method: HttpMethod,
-    path: Path,
-    cb: AsyncRequestHandler,
-  ) {
+  public pushRoute(method: string, path: Path, cb: AsyncRequestHandler) {
     this.routes.push({ method, path, cb });
+  }
+
+  public get(path: string, cb: AsyncRequestHandler) {
+    this.pushRoute('GET', new Path(path), cb);
+  }
+
+  public post(path: string, cb: AsyncRequestHandler) {
+    this.pushRoute('POST', new Path(path), cb);
   }
 }
