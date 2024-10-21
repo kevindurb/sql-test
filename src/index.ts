@@ -1,9 +1,18 @@
-import { Api } from './Api.js';
+import http, { IncomingMessage, ServerResponse } from 'node:http';
+import { StackHandler } from './StackHandler.js';
+import { get } from './route.js';
 
-const api = new Api();
+interface Context {
+  req: IncomingMessage;
+  res: ServerResponse;
+}
 
-api.get('/', (_, res) => {
-  res.end('Hello World');
+const stackHandler = new StackHandler<Context, unknown>();
+
+const server = http.createServer(async (req, res) => {
+  const result = await stackHandler.handle({ req, res });
 });
 
-api.listen();
+stackHandler.push(get('/', ({ params }) => console.log(params)));
+
+server.listen(1337, () => console.log('Listening...'));

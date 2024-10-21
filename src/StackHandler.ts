@@ -1,6 +1,6 @@
-type UnknownFunc = () => unknown | Promise<unknown>;
+export type UnknownFunc = () => unknown | Promise<unknown>;
 
-type Handler<ValueType, ResultType> = (
+export type Handler<ValueType, ResultType> = (
   value: ValueType,
   cb: UnknownFunc | undefined,
 ) => ResultType | Promise<ResultType>;
