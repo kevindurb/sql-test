@@ -1,19 +1,24 @@
 import { createServer } from 'node:http';
 import type { Server, IncomingMessage, ServerResponse } from 'node:http';
 import { Path } from 'path-parser';
-import { BadRequest, HttpError, NotFound } from './HttpError.js';
+import { BadRequest, HttpError, NotFound, ServerError } from './HttpError.js';
+import { Response } from './Response.js';
 
-type AsyncRequestHandler = (
+interface Context<ParamsType extends unknown> {
+  params: ParamsType;
+}
+
+type AsyncRequestHandler<ParamsType> = (
   req: IncomingMessage,
-  res: ServerResponse,
-) => Promise<void> | void;
+  context: Context<ParamsType>,
+) => Promise<Response> | Response;
 
 export class Api {
   private server: Server;
   private routes: Array<{
     method: string;
     path: Path;
-    cb: AsyncRequestHandler;
+    cb: AsyncRequestHandler<unknown>;
   }> = [];
 
   constructor() {
@@ -36,18 +41,20 @@ export class Api {
 
       if (!route) throw new NotFound();
 
-      route.cb(req, res);
+      const params = route.path.test(req.url) ?? {};
+
+      const response = await route.cb(req, { params });
+      console.log(response);
+      response.writeToResponse(res);
     } catch (err) {
       console.error(err);
       if (!(err instanceof HttpError)) {
-        res
-          .writeHead(500, { 'content-type': 'application/json' })
-          .end({ error: 'Server Error' });
+        new ServerError().toResponse().writeToResponse(res);
       } else {
-        res
-          .writeHead(err.code, { 'content-type': 'application/json' })
-          .end({ error: err.message });
+        err.toResponse().writeToResponse(res);
       }
+    } finally {
+      if (!res.writableFinished) res.end();
     }
   }
 
@@ -57,15 +64,19 @@ export class Api {
     });
   }
 
-  public pushRoute(method: string, path: Path, cb: AsyncRequestHandler) {
+  public pushRoute(
+    method: string,
+    path: Path,
+    cb: AsyncRequestHandler<unknown>,
+  ) {
     this.routes.push({ method, path, cb });
   }
 
-  public get(path: string, cb: AsyncRequestHandler) {
-    this.pushRoute('GET', new Path(path), cb);
+  public get<ParamsType>(path: string, cb: AsyncRequestHandler<ParamsType>) {
+    this.pushRoute('GET', new Path(path), cb as AsyncRequestHandler<unknown>);
   }
 
-  public post(path: string, cb: AsyncRequestHandler) {
-    this.pushRoute('POST', new Path(path), cb);
+  public post<ParamsType>(path: string, cb: AsyncRequestHandler<ParamsType>) {
+    this.pushRoute('POST', new Path(path), cb as AsyncRequestHandler<unknown>);
   }
 }

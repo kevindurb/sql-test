@@ -1,9 +1,15 @@
+import { Response } from './Response.js';
+
 export class HttpError extends Error {
   constructor(
     public code: number,
     message: string,
   ) {
     super(message);
+  }
+
+  toResponse() {
+    return new Response(this.code).withJSON({ error: this.message });
   }
 }
 
