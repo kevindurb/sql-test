@@ -12,6 +12,7 @@
     "@tsconfig/strictest": "^2.0.5",
     "@types/better-sqlite3": "^7.6.11",
     "@types/express": "^5.0.0",
+    "@types/http-errors": "^2.0.4",
     "typescript": "^5.6.3"
   },
   "dependencies": {
@@ -19,6 +20,7 @@
     "express": "^4.21.1",
     "fastify": "^5.0.0",
     "fastify-plugin": "^5.0.1",
+    "http-errors": "^2.0.0",
     "path-parser": "^6.1.0"
   }
 }
