@@ -1,10 +1,9 @@
-import { Api } from './Api.js';
-import { Response } from './Response.js';
+import express from 'express';
 
-const api = new Api();
+const app = express();
 
-api.get<{ hello: string }>('/:hello', async (_, { params }) => {
-  return Response.success().withJSON(params.hello);
+app.get('/:hello', async (req, res) => {
+  res.send({ hello: req.params.hello });
 });
 
-api.listen(1337);
+app.listen(1337);
