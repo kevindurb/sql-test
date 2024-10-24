@@ -18,7 +18,7 @@ declare global {
 
 const db = sqlite('./database.sqlite');
 
-export const withContext: Handler = async (req, _, next) => {
+export const withContext: () => Handler = () => async (req, _, next) => {
   req.ctx = {
     db,
     todosRepository: new TodosRepository(db),
